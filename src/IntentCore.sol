@@ -8,15 +8,10 @@ contract IntentCore {
     mapping(address => uint256) public nonce;
 
     function run(Intent[] calldata intents, address solver, bytes calldata data) public {
-        uint256[] memory balances = new uint256[](intents.length);
-
         for (uint256 i; i < intents.length; i++) {
             Intent calldata intent = intents[i];
 
             intent.authenticate(nonce[intent.account]++, block.timestamp);
-
-            balances[i] = intent.outAsset.balanceOf(intent.account);
-
             intent.inAsset.transferFrom(intent.account, solver, intent.inMax);
         }
 
@@ -25,7 +20,7 @@ contract IntentCore {
         for (uint256 i; i < intents.length; i++) {
             Intent calldata intent = intents[i];
 
-            if (intent.outAsset.balanceOf(intent.account) - balances[i] < intent.outMin) revert();
+            if (intent.outAsset.balanceOf(intent.account) < intent.outMin) revert();
         }
     }
 }
