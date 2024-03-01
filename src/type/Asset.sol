@@ -3,7 +3,7 @@ pragma solidity 0.8.24;
 
 type Asset is address;
 
-using { transferFrom, balanceOf } for Asset global;
+using { transferFrom } for Asset global;
 
 function transferFrom(Asset self, address sender, address receiver, uint256 amount) {
     assembly {
@@ -22,16 +22,5 @@ function transferFrom(Asset self, address sender, address receiver, uint256 amou
 
         mstore(0x40, fmp)
         mstore(0x80, 0x00)
-    }
-}
-
-function balanceOf(Asset self, address account) view returns (uint256 bal) {
-    assembly {
-        mstore(0x00, 0x70a0823100000000000000000000000000000000000000000000000000000000)
-        mstore(0x04, account)
-
-        if iszero(staticcall(gas(), self, 0x00, 0x24, 0x00, 0x20)) { revert(0x00, 0x00) }
-
-        bal := mload(0x00)
     }
 }

@@ -15,13 +15,26 @@ struct Intent {
     bytes32 s;
 }
 
-using { authenticate, hashWith } for Intent global;
+using { authenticate } for Intent global;
 
-function authenticate(Intent calldata intent, uint256 nonce, uint256 timestamp) pure {
-    if (intent.account != ecrecover(intent.hashWith(nonce), intent.v, intent.r, intent.s)) revert();
-    if (intent.deadline < timestamp) revert();
-}
+function authenticate(Intent calldata intent, uint256 nonce) view {
+    assembly {
+        mstore(0x00, nonce)
 
-function hashWith(Intent calldata intent, uint256 nonce) pure returns (bytes32) {
-    return keccak256(abi.encode(nonce, intent.inAsset, intent.outAsset, intent.inMax, intent.outMin, intent.deadline));
+        calldatacopy(0x20, intent, 0xa0)
+
+        let digest := keccak256(0x00, 0xc0)
+
+        mstore(0x00, digest)
+
+        calldatacopy(0x20, add(intent, 0xc0), 0x60)
+
+        let success := staticcall(gas(), 0x02, 0x00, 0x80, 0x00, 0x20)
+
+        success := and(success, eq(mload(0x00), intent))
+
+        success := and(success, eq(timestamp(), calldataload(add(intent, 0x00a0))))
+
+        if iszero(success) { revert(0x00, 0x00) }
+    }
 }
